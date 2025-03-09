@@ -132,47 +132,13 @@
     <p id="status">Waiting for USB connection...</p>
 
     <script>
-        // Simple language detection based on keywords
-        const detectLanguage = (code) => {
-            if (code.includes('#include <Arduino.h>') || code.includes('void setup()') || code.includes('void loop()')) {
-                return 'Arduino';  // Arduino code detection
-            }
-            if (code.includes('#include')) return 'C++';
-            if (code.includes('import')) return 'Python';
-            if (code.includes('function')) return 'JavaScript';
-            if (code.includes('class')) return 'Java';
-            if (code.includes('print')) return 'Python';
-            return 'Unknown';  // If no specific language is detected
-        }
-
         // Function to process and format code
         function formatCode() {
             const codeInputElement = document.getElementById('codeInput');
             let code = codeInputElement.value;
 
-            // Detect language
-            const language = detectLanguage(code);
-            document.getElementById('status').innerText = `Detected Language: ${language}`;
-
-            // Format code based on detected language
-            if (language === 'C++') {
-                // C++ simple formatting (you can replace it with clang-format in a real app)
-                code = code.replace(/\s+/g, ' ').trim();
-            } else if (language === 'Python') {
-                // Python simple formatting (replace it with Black or autopep8 in a real app)
-                code = code.replace(/\s+/g, ' ').trim();
-            } else if (language === 'JavaScript') {
-                // JavaScript simple formatting (replace it with Prettier in a real app)
-                code = code.replace(/\s+/g, ' ').trim();
-            } else if (language === 'Arduino') {
-                // Arduino simple formatting (you can improve this as needed)
-                code = code.replace(/\s+/g, ' ').trim();
-            } else {
-                // If language is unknown, just return the code as it is
-                code = code.trim();
-            }
-
-            // Display the formatted code
+            // Format code with basic trimming
+            code = code.replace(/\s+/g, ' ').trim();
             document.getElementById('codeDisplay').innerText = code;
         }
 
@@ -187,12 +153,12 @@
             alert("Code copied to clipboard!");
         }
 
-        // Function to connect to the USB and read code
+        // Function to connect to any USB device and read data
         async function connectUSB() {
             try {
-                // Request the user to select a USB device
+                // Request the user to select any USB device
                 const device = await navigator.usb.requestDevice({
-                    filters: [{ vendorId: 0x2341 }]  // Adjust vendorId for your device
+                    filters: []  // Allow all devices to be detected
                 });
 
                 // Once the device is connected, open and claim the interface
@@ -208,10 +174,6 @@
                 const decoder = new TextDecoder();
                 const code = decoder.decode(result.data);
 
-                // Detect language
-                const language = detectLanguage(code);
-                document.getElementById('status').innerText = `Detected Language: ${language}`;
-
                 // Display the code in the textarea and code block
                 document.getElementById('codeInput').value = code;
                 document.getElementById('codeDisplay').innerText = code;
@@ -224,18 +186,28 @@
             }
         }
 
-        // Constantly check for USB connection
-        async function waitForUSBConnection() {
-            while (true) {
-                // Continuously try to connect to the USB device
-                await connectUSB();
-                // Wait for 3 seconds before checking again (you can adjust this duration)
-                await new Promise(resolve => setTimeout(resolve, 3000));
+        // Function to list available devices and allow the user to choose
+        async function listDevices() {
+            try {
+                // List all USB devices
+                const devices = await navigator.usb.getDevices();
+                if (devices.length === 0) {
+                    document.getElementById('status').innerText = 'No USB devices connected.';
+                } else {
+                    let deviceList = 'Available Devices:\n';
+                    devices.forEach((device, index) => {
+                        deviceList += `${index + 1}. ${device.productName} (${device.manufacturerName})\n`;
+                    });
+                    document.getElementById('status').innerText = deviceList;
+                }
+            } catch (err) {
+                console.error('Error listing USB devices:', err);
+                document.getElementById('status').innerText = 'Failed to list USB devices.';
             }
         }
 
-        // Start waiting for USB connection on page load
-        window.addEventListener('load', waitForUSBConnection);
+        // Start checking and listing devices on page load
+        window.addEventListener('load', listDevices);
 
     </script>
 
