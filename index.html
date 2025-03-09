@@ -134,6 +134,9 @@
     <script>
         // Simple language detection based on keywords
         const detectLanguage = (code) => {
+            if (code.includes('#include <Arduino.h>') || code.includes('void setup()') || code.includes('void loop()')) {
+                return 'Arduino';  // Arduino code detection
+            }
             if (code.includes('#include')) return 'C++';
             if (code.includes('import')) return 'Python';
             if (code.includes('function')) return 'JavaScript';
@@ -160,6 +163,9 @@
                 code = code.replace(/\s+/g, ' ').trim();
             } else if (language === 'JavaScript') {
                 // JavaScript simple formatting (replace it with Prettier in a real app)
+                code = code.replace(/\s+/g, ' ').trim();
+            } else if (language === 'Arduino') {
+                // Arduino simple formatting (you can improve this as needed)
                 code = code.replace(/\s+/g, ' ').trim();
             } else {
                 // If language is unknown, just return the code as it is
