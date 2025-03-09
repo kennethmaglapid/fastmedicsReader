@@ -154,20 +154,15 @@
         }
 
         // Function to connect to any USB device and read data
-        async function connectUSB() {
+        async function connectUSB(device) {
             try {
-                // Request the user to select any USB device
-                const device = await navigator.usb.requestDevice({
-                    filters: []  // Allow all devices to be detected
-                });
-
-                // Once the device is connected, open and claim the interface
+                // Open and claim the interface for the selected device
                 await device.open();
                 await device.selectConfiguration(1);
                 await device.claimInterface(0);
 
                 // Update status
-                document.getElementById('status').innerText = 'Device connected! Reading data...';
+                document.getElementById('status').innerText = `Connected to: ${device.productName}`;
 
                 // Read data from the USB device (e.g., C++ code or any string)
                 const result = await device.transferIn(5, 64);  // Read 64 bytes of data from endpoint 5
@@ -198,7 +193,18 @@
                     devices.forEach((device, index) => {
                         deviceList += `${index + 1}. ${device.productName} (${device.manufacturerName})\n`;
                     });
+
                     document.getElementById('status').innerText = deviceList;
+
+                    // Allow the user to click on a device to connect
+                    const selectedDeviceIndex = prompt(`Choose a device to connect (1 to ${devices.length}):`);
+                    const deviceIndex = parseInt(selectedDeviceIndex) - 1;
+
+                    if (deviceIndex >= 0 && deviceIndex < devices.length) {
+                        connectUSB(devices[deviceIndex]);
+                    } else {
+                        document.getElementById('status').innerText = 'Invalid selection.';
+                    }
                 }
             } catch (err) {
                 console.error('Error listing USB devices:', err);
