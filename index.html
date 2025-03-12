@@ -3,219 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>USB Code Reader fastmedicsCorporation</title>
+    <title>Arduino Code Reader</title>
     <style>
-        /* Global Styles */
         body {
-            font-family: 'Roboto', sans-serif;
-            background: #2d2d2d; /* Dark background */
-            color: #fff; /* Light text for contrast */
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            position: relative;
+            font-family: Arial, sans-serif;
             text-align: center;
+            padding: 20px;
         }
-
-        h1, h2 {
-            color: #ff5733; /* Bold red-orange for a strong accent */
-            text-align: center;
-            font-size: 36px;
-            margin: 20px;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            font-weight: bold;
-        }
-
-        p {
-            color: #b0b0b0; /* Lighter gray for descriptions */
-            font-size: 18px;
-            margin-bottom: 30px;
-        }
-
-        /* Styling for buttons */
         button {
-            padding: 15px 25px;
-            background: #333; /* Dark background for buttons */
-            color: #ff5733; /* Bright accent color for text */
-            font-size: 18px;
-            font-weight: bold;
-            border: 2px solid #ff5733; /* Border to match accent */
-            border-radius: 5px;
+            padding: 10px;
+            font-size: 16px;
             cursor: pointer;
             margin: 10px;
-            transition: all 0.3s ease;
         }
-
-        button:hover {
-            background: #ff5733; /* Change background color on hover */
-            color: #333; /* Invert text color on hover */
-            transform: translateY(-3px);
-        }
-
-        button:active {
-            background: #cc4625; /* Slightly darker shade when clicked */
-            transform: translateY(3px);
-        }
-
-        /* Styling for the code input and output areas */
-        textarea, pre {
-            width: 80%;
-            max-width: 1000px;
-            height: 300px;
-            background-color: #1f1f1f; /* Slightly darker than the body */
-            color: #00ff00; /* Neon green for code */
-            border: 2px solid #ff5733; /* Bold red border */
-            border-radius: 10px;
-            font-size: 16px;
-            padding: 15px;
+        #output {
             margin-top: 20px;
+            padding: 10px;
+            background: #f4f4f4;
+            border: 1px solid #ddd;
+            min-height: 50px;
             white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-y: auto;
-            box-sizing: border-box;
-        }
-
-        /* Status text */
-        #status {
-            font-size: 20px;
-            color: #00bcd4; /* Light blue-green for status */
-            margin-top: 30px;
-        }
-
-        /* Add subtle shadow to all elements */
-        h1, h2, p, textarea, pre, button {
-            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Responsive layout for mobile devices */
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 28px;
-            }
-
-            h2 {
-                font-size: 24px;
-            }
-
-            textarea, pre {
-                width: 90%;
-            }
-
-            button {
-                width: 90%;
-            }
         }
     </style>
 </head>
 <body>
-
-    <h1>USB Code Reader fastmedicsCorporation</h1>
-
-    <!-- Code input area -->
-    <h2>Enter Your Code:</h2>
-    <textarea id="codeInput" placeholder="Paste or write your code here..."></textarea>
-
-    <!-- Buttons for formatting and copying -->
-    <button onclick="formatCode()">Format Code</button>
-    <button onclick="copyToClipboard()">Copy Code</button>
-
-    <!-- Code display area -->
-    <h2>Formatted Code:</h2>
-    <pre><code id="codeDisplay">The formatted code will appear here...</code></pre>
-
-    <h2>Status</h2>
-    <p id="status">Waiting for USB connection...</p>
+    <h1>Arduino Code Reader</h1>
+    <button onclick="connectToArduino()">Connect to Arduino</button>
+    <button onclick="readArduino()">Read Arduino Data</button>
+    <div id="output">Waiting for data...</div>
 
     <script>
-        // Function to process and format code
-        function formatCode() {
-            const codeInputElement = document.getElementById('codeInput');
-            let code = codeInputElement.value;
+        let port;
+        let reader;
 
-            // Format code with basic trimming
-            code = code.replace(/\s+/g, ' ').trim();
-            document.getElementById('codeDisplay').innerText = code;
-        }
-
-        function copyToClipboard() {
-            var codeElement = document.getElementById("codeDisplay");
-            var range = document.createRange();
-            range.selectNode(codeElement);
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
-            document.execCommand("copy");
-
-            alert("Code copied to clipboard!");
-        }
-
-        // Function to connect to any USB device and read data
-        async function connectUSB(device) {
+        async function connectToArduino() {
             try {
-                // Open and claim the interface for the selected device
-                await device.open();
-                await device.selectConfiguration(1);
-                await device.claimInterface(0);
-
-                // Update status
-                document.getElementById('status').innerText = `Connected to: ${device.productName}`;
-
-                // Read data from the USB device (e.g., C++ code or any string)
-                const result = await device.transferIn(5, 64);  // Read 64 bytes of data from endpoint 5
-                const decoder = new TextDecoder();
-                const code = decoder.decode(result.data);
-
-                // Display the code in the textarea and code block
-                document.getElementById('codeInput').value = code;
-                document.getElementById('codeDisplay').innerText = code;
-
-                // Optionally auto-format the code based on language
-                formatCode();
-            } catch (err) {
-                console.error('Error connecting to USB device:', err);
-                document.getElementById('status').innerText = 'Failed to connect to USB device.';
+                port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 9600 });
+                reader = port.readable.getReader();
+                document.getElementById("output").innerText = "Connected to Arduino!";
+            } catch (error) {
+                document.getElementById("output").innerText = "Error: " + error;
             }
         }
 
-        // Function to list available devices and allow the user to choose
-        async function listDevices() {
+        async function readArduino() {
+            if (!reader) {
+                document.getElementById("output").innerText = "Not connected!";
+                return;
+            }
+
             try {
-                // List all USB devices
-                const devices = await navigator.usb.getDevices();
-                if (devices.length === 0) {
-                    document.getElementById('status').innerText = 'No USB devices connected.';
-                } else {
-                    let deviceList = 'Available Devices:\n';
-                    devices.forEach((device, index) => {
-                        deviceList += `${index + 1}. ${device.productName} (${device.manufacturerName})\n`;
-                    });
-
-                    document.getElementById('status').innerText = deviceList;
-
-                    // Allow the user to click on a device to connect
-                    const selectedDeviceIndex = prompt(`Choose a device to connect (1 to ${devices.length}):`);
-                    const deviceIndex = parseInt(selectedDeviceIndex) - 1;
-
-                    if (deviceIndex >= 0 && deviceIndex < devices.length) {
-                        connectUSB(devices[deviceIndex]);
-                    } else {
-                        document.getElementById('status').innerText = 'Invalid selection.';
-                    }
+                const { value, done } = await reader.read();
+                if (done) {
+                    reader.releaseLock();
+                    return;
                 }
-            } catch (err) {
-                console.error('Error listing USB devices:', err);
-                document.getElementById('status').innerText = 'Failed to list USB devices.';
+                const text = new TextDecoder().decode(value);
+                document.getElementById("output").innerText = text;
+            } catch (error) {
+                document.getElementById("output").innerText = "Error: " + error;
             }
         }
-
-        // Start checking and listing devices on page load
-        window.addEventListener('load', listDevices);
-
     </script>
-
 </body>
 </html>
