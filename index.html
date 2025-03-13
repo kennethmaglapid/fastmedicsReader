@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Snake Game</title>
+    <title>MAGLAPID Game</title>
     <style>
         body { 
             margin: 0; 
@@ -22,12 +22,19 @@
             background: #111; 
             border: 2px solid white; 
         }
-        .button-container {
+        .button-container, .touch-controls {
             display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: center;
             margin-top: 20px;
+        }
+        .touch-controls {
+            flex-direction: column;
+        }
+        .control-row {
+            display: flex;
+            justify-content: center;
         }
         button, select {
             margin: 10px;
@@ -56,7 +63,7 @@
     </style>
 </head>
 <body>
-    <h1>Snake Game</h1>
+    <h1>MAGLAPID Game</h1>
     <p>Score: <span id="score">0</span></p>
     <p>Highest Score: <span id="highestScore">0</span></p>
     <p id="newHighScore" style="display: none;" class="new-high-score">New High Score!</p>
@@ -70,6 +77,18 @@
             <option value="100" selected>Normal</option>
             <option value="50">Hard</option>
         </select>
+    </div>
+    <div class="touch-controls">
+        <div class="control-row">
+            <button onclick="changeDirection('UP')">⬆️</button>
+        </div>
+        <div class="control-row">
+            <button onclick="changeDirection('LEFT')">⬅️</button>
+            <button onclick="changeDirection('RIGHT')">➡️</button>
+        </div>
+        <div class="control-row">
+            <button onclick="changeDirection('DOWN')">⬇️</button>
+        </div>
     </div>
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -134,38 +153,11 @@
             return snake.slice(1).some(segment => segment.x === snake[0].x && segment.y === snake[0].y);
         }
         
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
-            if (e.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
-            if (e.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
-            if (e.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
-        });
-        
-        function restartGame() {
-            snake = [{x: 200, y: 200}];
-            direction = "RIGHT";
-            score = 0;
-            document.getElementById("score").innerText = score;
-            document.getElementById("restartBtn").style.display = "none";
-            document.getElementById("newHighScore").style.display = "none";
-            gameInterval = setInterval(updateGame, gameSpeed);
-        }
-        
-        function pauseGame() {
-            paused = true;
-            document.getElementById("pauseBtn").style.display = "none";
-            document.getElementById("continueBtn").style.display = "block";
-        }
-        
-        function continueGame() {
-            paused = false;
-            document.getElementById("pauseBtn").style.display = "block";
-            document.getElementById("continueBtn").style.display = "none";
-        }
-
-        function glowEffect() {
-            canvas.classList.add("glow");
-            setTimeout(() => canvas.classList.remove("glow"), 1000);
+        function changeDirection(newDirection) {
+            if (newDirection === "UP" && direction !== "DOWN") direction = "UP";
+            if (newDirection === "DOWN" && direction !== "UP") direction = "DOWN";
+            if (newDirection === "LEFT" && direction !== "RIGHT") direction = "LEFT";
+            if (newDirection === "RIGHT" && direction !== "LEFT") direction = "RIGHT";
         }
     </script>
 </body>
