@@ -2,162 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>MAGLAPID Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
     <style>
-        body { 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            background: black; 
-            font-family: Arial, sans-serif; 
-            color: white; 
-            text-align: center; 
-            overflow: hidden;
-        }
-        canvas { 
-            background: #111; 
-            border: 2px solid white; 
-        }
-        .button-container, .touch-controls {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        .touch-controls {
-            flex-direction: column;
-        }
-        .control-row {
-            display: flex;
-            justify-content: center;
-        }
-        button, select {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 18px;
-            background: #ff5722;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        #restartBtn { display: none; }
-        .glow {
-            box-shadow: 0 0 15px yellow;
-        }
-        .new-high-score {
-            font-size: 24px;
-            font-weight: bold;
-            color: gold;
-            animation: blink 1s infinite alternate;
-        }
-        @keyframes blink {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
+        body { text-align: center; font-family: Arial, sans-serif; }
+        input { padding: 10px; width: 80%; max-width: 300px; margin: 10px 0; }
+        button { padding: 10px 20px; cursor: pointer; }
+        img { margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h1>MAGLAPID Game</h1>
-    <p>Score: <span id="score">0</span></p>
-    <p>Highest Score: <span id="highestScore">0</span></p>
-    <p id="newHighScore" style="display: none;" class="new-high-score">New High Score!</p>
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
-    <div class="button-container">
-        <button id="pauseBtn" onclick="pauseGame()">Pause</button>
-        <button id="continueBtn" onclick="continueGame()" style="display: none;">Continue</button>
-        <button id="restartBtn" onclick="restartGame()">Restart</button>
-        <select id="speedBtn" onchange="changeSpeed(this.value)">
-            <option value="150">Slow</option>
-            <option value="100" selected>Normal</option>
-            <option value="50">Hard</option>
-        </select>
-    </div>
-    <div class="touch-controls">
-        <div class="control-row">
-            <button onclick="changeDirection('UP')">⬆️</button>
-        </div>
-        <div class="control-row">
-            <button onclick="changeDirection('LEFT')">⬅️</button>
-            <button onclick="changeDirection('RIGHT')">➡️</button>
-        </div>
-        <div class="control-row">
-            <button onclick="changeDirection('DOWN')">⬇️</button>
-        </div>
-    </div>
+    <h1>QR Code Generator</h1>
+    <input type="text" id="qrText" placeholder="Enter text or URL">
+    <button onclick="generateQR()">Generate QR Code</button>
+    <br>
+    <img id="qrImage" src="" alt="QR Code will appear here">
+
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-
-        let snake = [{x: 200, y: 200}];
-        let direction = "RIGHT";
-        let food = {x: Math.floor(Math.random() * 20) * 20, y: Math.floor(Math.random() * 20) * 20};
-        let score = 0;
-        let highestScore = localStorage.getItem("highestScore") || 0;
-        document.getElementById("highestScore").innerText = highestScore;
-        let gameSpeed = 100;
-        let gameInterval = setInterval(updateGame, gameSpeed);
-        let paused = false;
-
-        function updateGame() {
-            if (paused) return;
-            let head = { ...snake[0] };
-            if (direction === "UP") head.y -= 20;
-            if (direction === "DOWN") head.y += 20;
-            if (direction === "LEFT") head.x -= 20;
-            if (direction === "RIGHT") head.x += 20;
-            
-            if (head.x === food.x && head.y === food.y) {
-                score += 10;
-                document.getElementById("score").innerText = score;
-                food = {x: Math.floor(Math.random() * 20) * 20, y: Math.floor(Math.random() * 20) * 20};
-                snake.unshift(head);
-                glowEffect();
+        function generateQR() {
+            let qrText = document.getElementById("qrText").value;
+            if (qrText.trim() !== "") {
+                let qrImage = document.getElementById("qrImage");
+                qrImage.src = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(qrText)}`;
             } else {
-                snake.pop();
-                snake.unshift(head);
+                alert("Please enter text or URL.");
             }
-            
-            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height || checkCollision()) {
-                clearInterval(gameInterval);
-                document.getElementById("restartBtn").style.display = "block";
-                if (score > highestScore) {
-                    highestScore = score;
-                    localStorage.setItem("highestScore", highestScore);
-                    document.getElementById("highestScore").innerText = highestScore;
-                    document.getElementById("newHighScore").style.display = "block";
-                }
-            }
-            drawGame();
-        }
-        
-        function drawGame() {
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "red";
-            ctx.fillRect(food.x, food.y, 20, 20);
-            ctx.fillStyle = "lime";
-            snake.forEach((segment, index) => {
-                ctx.beginPath();
-                ctx.arc(segment.x + 10, segment.y + 10, 10, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-        
-        function checkCollision() {
-            return snake.slice(1).some(segment => segment.x === snake[0].x && segment.y === snake[0].y);
-        }
-        
-        function changeDirection(newDirection) {
-            if (newDirection === "UP" && direction !== "DOWN") direction = "UP";
-            if (newDirection === "DOWN" && direction !== "UP") direction = "DOWN";
-            if (newDirection === "LEFT" && direction !== "RIGHT") direction = "LEFT";
-            if (newDirection === "RIGHT" && direction !== "LEFT") direction = "RIGHT";
         }
     </script>
 </body>
