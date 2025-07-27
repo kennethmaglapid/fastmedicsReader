@@ -2,74 +2,77 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Face Detection with Info</title>
+  <title>Face Detection</title>
   <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
   <style>
-    body {
-      margin: 0;
-      background: #000;
-      color: white;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    canvas {
+    video, canvas {
       position: absolute;
+      top: 0;
+      left: 0;
+      transform: scaleX(-1); /* Mirror like a real webcam */
     }
-    video {
-      border: 4px solid lime;
-      border-radius: 10px;
-      transform: scaleX(-1); /* mirror */
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.5);
+      color: white;
+      padding: 10px;
+      font-family: sans-serif;
     }
   </style>
 </head>
 <body>
-  <h2>🔍 Face Detection with Age & Gender</h2>
+  <div id="info">Loading models...</div>
   <video id="video" width="720" height="560" autoplay muted></video>
+  <canvas id="overlay" width="720" height="560"></canvas>
 
   <script>
     const video = document.getElementById('video');
+    const overlay = document.getElementById('overlay');
+    const info = document.getElementById('info');
+    const ctx = overlay.getContext('2d');
 
-    // Load face-api models
     Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/models'),
-      faceapi.nets.ageGenderNet.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/models'),
-      faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/models')
+      faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+      faceapi.nets.ageGenderNet.loadFromUri('/models'),
+      faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+      faceapi.nets.faceRecognitionNet.loadFromUri('/models')
     ]).then(startVideo);
 
-    // Start video stream
     function startVideo() {
+      info.textContent = "Requesting camera access...";
       navigator.mediaDevices.getUserMedia({ video: {} })
-        .then(stream => video.srcObject = stream)
-        .catch(err => console.error("Camera error:", err));
+        .then(stream => {
+          video.srcObject = stream;
+          info.textContent = "Camera started. Detecting...";
+        })
+        .catch(err => {
+          info.textContent = "❌ Camera access denied.";
+          console.error(err);
+        });
     }
 
-    // Draw face data on video
     video.addEventListener('play', () => {
-      const canvas = faceapi.createCanvasFromMedia(video);
-      document.body.append(canvas);
       const displaySize = { width: video.width, height: video.height };
-      faceapi.matchDimensions(canvas, displaySize);
+      faceapi.matchDimensions(overlay, displaySize);
 
       setInterval(async () => {
-        const detections = await faceapi.detectAllFaces(
-          video,
-          new faceapi.TinyFaceDetectorOptions()
-        ).withFaceLandmarks().withAgeAndGender();
+        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withAgeAndGender();
 
+        ctx.clearRect(0, 0, overlay.width, overlay.height);
         const resized = faceapi.resizeResults(detections, displaySize);
-        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-        faceapi.draw.drawDetections(canvas, resized);
-        resized.forEach(detection => {
-          const { age, gender, genderProbability } = detection;
-          const info = `${gender} (${(genderProbability * 100).toFixed(0)}%), Age: ${age.toFixed(0)}`;
-          const box = detection.detection.box;
-          const ctx = canvas.getContext('2d');
+
+        resized.forEach(d => {
+          const { age, gender, genderProbability } = d;
+          const box = d.detection.box;
+          const text = `${gender} (${(genderProbability*100).toFixed(0)}%) - Age: ${age.toFixed(0)}`;
+
+          ctx.strokeStyle = 'lime';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(box.x, box.y, box.width, box.height);
           ctx.fillStyle = 'lime';
-          ctx.font = '16px Arial';
-          ctx.fillText(info, box.x, box.y - 10);
+          ctx.fillText(text, box.x, box.y - 10);
         });
       }, 500);
     });
